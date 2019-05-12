@@ -57,6 +57,7 @@ function sceneDrop(event){
         var input = document.createElement('input');
         input.type = "file";
         input.id = img.id.slice(0,-6);
+        div.id= input.id + "_div";
         input.addEventListener( "change", changeEvent );
         div.appendChild(input);
         //表示エリアに追加
@@ -76,6 +77,7 @@ function sceneAddFile(event) {
   reader.onload = function (event) {
     document.getElementById('save').removeAttribute("disabled");
     document.getElementById('add').removeAttribute("disabled");
+    document.getElementById('rem').removeAttribute("disabled");
     document.getElementById('imgArea').innerHTML = "";
     var long = large_buffer_to_string(reader.result);
     console.log(long);
@@ -127,6 +129,13 @@ function addChara() {
     img.id = charaData.length+1+ "_image";
     img.src = "data:image/png;base64," + window.btoa(charaData[0]);
   dispChara(img);
+}
+
+function remChara() {
+  ele =   document.getElementById("imgArea");
+  ele.removeChild(ele.lastElementChild); 
+  charaData.pop();
+  charaNum --;
 }
 
 
@@ -187,7 +196,8 @@ function save() {
 </head>
 <body>
 <button id="save" onclick="save()" disabled="disabled">保存</button>
-<button id="add" onclick="addChara()" disabled="disabled">人数追加(先頭キャラを複製)</button>
+<button id="add" onclick="addChara()" disabled="disabled">1人追加(先頭キャラを複製)</button>
+<button id="rem" onclick="remChara()" disabled="disabled">1人削除(末尾キャラを削除)</button>
 <br>
 <input type="file" id="inputfile" onchange="sceneAddFile(event);" >
 <br>

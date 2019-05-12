@@ -15,20 +15,16 @@ let charaNum;
 let charaData = [];
 let sceneData;
 
-// 文字列から ArrayBuffer への変換
 function string_to_buffer(src) {
   return (new Uint8Array([].map.call(src, function(c) {
     return c.charCodeAt(0)
   }))).buffer;
 }
 
-// ArrayBuffer から文字列への変換
 function buffer_to_string(buf) {
   return String.fromCharCode.apply("", new Uint8Array(buf))
 }
 
-// ただし、文字列が長すぎる場合は RangeError: Maximum call stack size exceeded. が発生してしまう。
-// 以下は1024バイト単位に分割して処理する場合
 function large_buffer_to_string(buf) {
   var tmp = [];
   var len = 1024;
@@ -80,16 +76,12 @@ function sceneAddFile(event) {
     document.getElementById('rem').removeAttribute("disabled");
     document.getElementById('imgArea').innerHTML = "";
     var long = large_buffer_to_string(reader.result);
-    console.log(long);
     //PNGファイルシグネチャで分割
     var images = long.split(sig);
-    console.log( images );
     var img = document.createElement('img');
     //シーンの画像表示
     sceneImage = sig + images[1].slice(0,-4);
     charaNum = images.length - 2;
-    console.log(  images[1] );
-    console.log(  charaNum );
     img.id = "scene_image";
     img.src = "data:image/png;base64," + window.btoa(sceneImage);
     document.getElementById('scene').innerHTML = "";
@@ -102,7 +94,6 @@ function sceneAddFile(event) {
           charaData[i-2] = sig + images[i].split(charEnd)[0] + charEnd;
           img.src = "data:image/png;base64," + window.btoa(charaData[i-2]);
           sceneData = images[i].split(charEnd)[1];
-          //console.log( sceneData );
         } else {
           //最後尾以外のキャラはデータそのまま
           charaData[i-2] = sig + images[i];
@@ -141,7 +132,6 @@ function remChara() {
 
 var changeEvent = function charaChange(event) {
   var eventDOM = event.target;
-     console.log(eventDOM);
   var files;
   var reader = new FileReader();
   
@@ -154,9 +144,7 @@ var changeEvent = function charaChange(event) {
   reader.onload = function (event) {
     var u8 = large_buffer_to_string(reader.result);
     document.getElementById(eventDOM.id + "_image").src = "data:image/png;base64," + window.btoa(u8);
-     console.log(u8);
     charaData[eventDOM.id - 2] = u8;
-     console.log(charaData[eventDOM.id - 2]);
   }
  
   if (files[0]){    
@@ -166,7 +154,6 @@ var changeEvent = function charaChange(event) {
 }        
 
 function save() {
-        //console.log(characters  );
         sceneSave = sceneImage;
         sceneSave += String.fromCharCode(charaNum, 0x00, 0x00, 0x00);
         for(var j=0; j < charaData.length; j++){
@@ -174,8 +161,6 @@ function save() {
         }
         sceneSave += sceneData;
         
-        //console.log( sceneData );
-          console.log( sceneSave );
     var a = document.createElement("a");
     document.body.appendChild(a);
     a.style = "display: none";

@@ -165,10 +165,8 @@ function save() {
     var a = document.createElement("a");
     document.body.appendChild(a);
     a.style = "display: none";
-    console.log(a);
     var blob = new Blob([string_to_buffer(sceneSave)], {type: "image/png"}),
     url = window.URL.createObjectURL(blob);
-    console.log(url);
 
     a.href = url;
     a.download = "edited.png";

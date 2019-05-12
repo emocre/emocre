@@ -71,6 +71,7 @@ function sceneAddFile(event) {
   }    
  
   reader.onload = function (event) {
+    charaData = [];
     document.getElementById('save').removeAttribute("disabled");
     document.getElementById('add').removeAttribute("disabled");
     document.getElementById('rem').removeAttribute("disabled");

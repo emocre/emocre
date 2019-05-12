@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+div {display: inline-block}
+</style>
+<script>
+const sig = String.fromCharCode(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+const charEnd = String.fromCharCode(0xAD, 0x73, 0x6F, 0x6E, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x69, 0x6F, 0x6E, 0x59, 0xCA, 0x00, 0x00, 0x00, 0x00);
+
+let sceneSave;
+let sceneImage;
+let charaNum;
+let charaData = [];
+let sceneData;
+
+// 文字列から ArrayBuffer への変換
+function string_to_buffer(src) {
+  return (new Uint8Array([].map.call(src, function(c) {
+    return c.charCodeAt(0)
+  }))).buffer;
+}
+
+// ArrayBuffer から文字列への変換
+function buffer_to_string(buf) {
+  return String.fromCharCode.apply("", new Uint8Array(buf))
+}
+
+// ただし、文字列が長すぎる場合は RangeError: Maximum call stack size exceeded. が発生してしまう。
+// 以下は1024バイト単位に分割して処理する場合
+function large_buffer_to_string(buf) {
+  var tmp = [];
+  var len = 1024;
+  for (var p = 0; p < buf.byteLength; p += len) {
+    tmp.push(buffer_to_string(buf.slice(p, p + len)));
+  }
+  return tmp.join("");
+}
+ 
+ 
+ 
+function sceneDragOver(event){ 
+  event.preventDefault(); 
+} 
+  
+function sceneDrop(event){
+  sceneAddFile(event);
+  event.preventDefault(); 
+}  
+ 
+ function dispChara(img) {
+        var div = document.createElement('div');
+        div.appendChild(img);
+        div.appendChild(document.createElement('br'));
+        //変更ボタン作成
+        var input = document.createElement('input');
+        input.type = "file";
+        input.id = img.id.slice(0,-6);
+        input.addEventListener( "change", changeEvent );
+        div.appendChild(input);
+        //表示エリアに追加
+        document.getElementById('imgArea').appendChild(div);
+ }
+ 
+function sceneAddFile(event) {
+  var files;
+  var reader = new FileReader();
+  
+  if(event.target.files){
+    files = event.target.files;
+  }else{ 
+    files = event.dataTransfer.files;   
+  }    
+ 
+  reader.onload = function (event) {
+    document.getElementById('save').removeAttribute("disabled");
+    document.getElementById('add').removeAttribute("disabled");
+    document.getElementById('imgArea').innerHTML = "";
+    var long = large_buffer_to_string(reader.result);
+    console.log(long);
+    //PNGファイルシグネチャで分割
+    var images = long.split(sig);
+    console.log( images );
+    var img = document.createElement('img');
+    //シーンの画像表示
+    sceneImage = sig + images[1].slice(0,-4);
+    charaNum = images.length - 2;
+    console.log(  images[1] );
+    console.log(  charaNum );
+    img.id = "scene_image";
+    img.src = "data:image/png;base64," + window.btoa(sceneImage);
+    document.getElementById('scene').innerHTML = "";
+    document.getElementById('scene').appendChild(img);
+    
+    for (var i = 2; i < images.length; i++) {
+        var img = document.createElement('img');
+        if(i == images.length-1){
+          //最後のキャラの場合末尾につくシーンデータを切り離す
+          charaData[i-2] = sig + images[i].split(charEnd)[0] + charEnd;
+          img.src = "data:image/png;base64," + window.btoa(charaData[i-2]);
+          sceneData = images[i].split(charEnd)[1];
+          //console.log( sceneData );
+        } else {
+          //最後尾以外のキャラはデータそのまま
+          charaData[i-2] = sig + images[i];
+          img.src = "data:image/png;base64," + window.btoa(charaData[i-2]);
+        }
+        
+        img.id = i + "_image";
+        //画像作成
+        dispChara(img);
+    }
+  };
+ 
+  if (files[0]){    
+    reader.readAsArrayBuffer(files[0]); 
+    document.getElementById("inputfile").value = '';
+  }
+}        
+
+
+function addChara() {
+  charaData.push(charaData[0]);
+  charaNum ++;
+    var img = document.createElement('img');
+    img.id = charaData.length+1+ "_image";
+    img.src = "data:image/png;base64," + window.btoa(charaData[0]);
+  dispChara(img);
+}
+
+
+var changeEvent = function charaChange(event) {
+  var eventDOM = event.target;
+     console.log(eventDOM);
+  var files;
+  var reader = new FileReader();
+  
+  if(event.target.files){
+    files = event.target.files;
+  }else{ 
+    files = event.dataTransfer.files;   
+  }    
+ 
+  reader.onload = function (event) {
+    var u8 = large_buffer_to_string(reader.result);
+    document.getElementById(eventDOM.id + "_image").src = "data:image/png;base64," + window.btoa(u8);
+     console.log(u8);
+    charaData[eventDOM.id - 2] = u8;
+     console.log(charaData[eventDOM.id - 2]);
+  }
+ 
+  if (files[0]){    
+    reader.readAsArrayBuffer(files[0]); 
+    document.getElementById("inputfile").value = '';
+  }
+}        
+
+function save() {
+        //console.log(characters  );
+        sceneSave = sceneImage;
+        sceneSave += String.fromCharCode(charaNum, 0x00, 0x00, 0x00);
+        for(var j=0; j < charaData.length; j++){
+          sceneSave += charaData[j];
+        }
+        sceneSave += sceneData;
+        
+        //console.log( sceneData );
+          console.log( sceneSave );
+    var a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style = "display: none";
+    console.log(a);
+    var blob = new Blob([string_to_buffer(sceneSave)], {type: "image/png"}),
+    url = window.URL.createObjectURL(blob);
+    console.log(url);
+
+    a.href = url;
+    a.download = "edited.png";
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+
+;
+</script>  
+</head>
+<body>
+<button id="save" onclick="save()" disabled="disabled">保存</button>
+<button id="add" onclick="addChara()" disabled="disabled">人数追加(先頭キャラを複製)</button>
+<br>
+<input type="file" id="inputfile" onchange="sceneAddFile(event);" >
+<br>
+<div id="scene" style="border: gray solid 1px;height:180px;width:320px;" ondrop="sceneDrop(event);" ondragover="sceneDragOver(event);">
+シーンデータをドロップ
+</div>
+<br>
+<div id="imgArea">
+</body>
+</html> 

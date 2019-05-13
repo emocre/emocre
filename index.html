@@ -3,82 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <style>
-div {display: inline-block}
+div{
+  display: inline-block;
+}
+div#scene{
+  border: gray solid 1px;
+  height:180px;
+  width:320px;
+}
 </style>
 <script>
 const sig = String.fromCharCode(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
 const charEnd = String.fromCharCode(0xAD, 0x73, 0x6F, 0x6E, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x69, 0x6F, 0x6E, 0x59, 0xCA, 0x00, 0x00, 0x00, 0x00);
-
 let sceneSave;
 let sceneImage;
 let charaNum;
 let charaData = [];
 let sceneData;
 
-function string_to_buffer(src) {
-  return (new Uint8Array([].map.call(src, function(c) {
-    return c.charCodeAt(0)
-  }))).buffer;
+function showChara(img) {
+  var div = document.createElement('div');
+  var input = document.createElement('input');
+  input.type = "file";
+  input.id = img.id.slice(0,-6);
+  input.addEventListener( "change", changeEvent );
+  div.appendChild(img);
+  div.appendChild(document.createElement('br'));
+  div.appendChild(input);
+  document.getElementById('members').appendChild(div);
 }
 
-function buffer_to_string(buf) {
-  return String.fromCharCode.apply("", new Uint8Array(buf))
+function addChara() {
+  var img = document.createElement('img');
+  img.id = charaData.length + 1 + "_image";
+  img.src = "data:image/png;base64," + window.btoa(charaData[0]);
+  showChara(img);
+  charaNum ++;
+  charaData.push(charaData[0]);
 }
 
-function large_buffer_to_string(buf) {
-  var tmp = [];
-  var len = 1024;
-  for (var p = 0; p < buf.byteLength; p += len) {
-    tmp.push(buffer_to_string(buf.slice(p, p + len)));
-  }
-  return tmp.join("");
+function remChara() {
+  var ele =   document.getElementById("members");
+  ele.removeChild(ele.lastElementChild);
+  charaNum --;
+  charaData.pop();
 }
- 
- 
- 
-function sceneDragOver(event){ 
-  event.preventDefault(); 
-} 
-  
-function sceneDrop(event){
-  sceneAddFile(event);
-  event.preventDefault(); 
-}  
- 
- function dispChara(img) {
-        var div = document.createElement('div');
-        div.appendChild(img);
-        div.appendChild(document.createElement('br'));
-        //変更ボタン作成
-        var input = document.createElement('input');
-        input.type = "file";
-        input.id = img.id.slice(0,-6);
-        div.id= input.id + "_div";
-        input.addEventListener( "change", changeEvent );
-        div.appendChild(input);
-        //表示エリアに追加
-        document.getElementById('imgArea').appendChild(div);
- }
- 
-function sceneAddFile(event) {
+
+function loadScene(event) {
   var files;
   var reader = new FileReader();
   
   if(event.target.files){
     files = event.target.files;
+    console.log(files[0].name);
   }else{ 
     files = event.dataTransfer.files;   
+    console.log(files[0].name);
   }    
- 
   reader.onload = function (event) {
     charaData = [];
     document.getElementById('save').removeAttribute("disabled");
     document.getElementById('add').removeAttribute("disabled");
     document.getElementById('rem').removeAttribute("disabled");
-    document.getElementById('imgArea').innerHTML = "";
-    var long = large_buffer_to_string(reader.result);
+    document.getElementById('members').innerHTML = "";
     //PNGファイルシグネチャで分割
-    var images = long.split(sig);
+    var images = reader.result.split(sig);
     var img = document.createElement('img');
     //シーンの画像表示
     sceneImage = sig + images[1].slice(0,-4);
@@ -90,7 +79,7 @@ function sceneAddFile(event) {
     
     for (var i = 2; i < images.length; i++) {
         var img = document.createElement('img');
-        if(i == images.length-1){
+        if(i == images.length - 1){
           //最後のキャラの場合末尾につくシーンデータを切り離す
           charaData[i-2] = sig + images[i].split(charEnd)[0] + charEnd;
           img.src = "data:image/png;base64," + window.btoa(charaData[i-2]);
@@ -103,33 +92,13 @@ function sceneAddFile(event) {
         
         img.id = i + "_image";
         //画像作成
-        dispChara(img);
+        showChara(img);
     }
-  };
- 
-  if (files[0]){    
-    reader.readAsArrayBuffer(files[0]); 
-    document.getElementById("inputfile").value = '';
   }
-}        
-
-
-function addChara() {
-  charaData.push(charaData[0]);
-  charaNum ++;
-    var img = document.createElement('img');
-    img.id = charaData.length+1+ "_image";
-    img.src = "data:image/png;base64," + window.btoa(charaData[0]);
-  dispChara(img);
+  if (files[0]){    
+    reader.readAsBinaryString(files[0]);
+  }
 }
-
-function remChara() {
-  ele =   document.getElementById("imgArea");
-  ele.removeChild(ele.lastElementChild); 
-  charaData.pop();
-  charaNum --;
-}
-
 
 var changeEvent = function charaChange(event) {
   var eventDOM = event.target;
@@ -140,55 +109,42 @@ var changeEvent = function charaChange(event) {
     files = event.target.files;
   }else{ 
     files = event.dataTransfer.files;   
-  }    
- 
+  }
   reader.onload = function (event) {
-    var u8 = large_buffer_to_string(reader.result);
-    document.getElementById(eventDOM.id + "_image").src = "data:image/png;base64," + window.btoa(u8);
-    charaData[eventDOM.id - 2] = u8;
+    document.getElementById(eventDOM.id + "_image").src = "data:image/png;base64," + window.btoa(reader.result);
+    charaData[eventDOM.id - 2] = reader.result;
   }
- 
   if (files[0]){    
-    reader.readAsArrayBuffer(files[0]); 
-    document.getElementById("inputfile").value = '';
+    reader.readAsBinaryString(files[0]); 
   }
-}        
-
-function save() {
-        sceneSave = sceneImage;
-        sceneSave += String.fromCharCode(charaNum, 0x00, 0x00, 0x00);
-        for(var j=0; j < charaData.length; j++){
-          sceneSave += charaData[j];
-        }
-        sceneSave += sceneData;
-        
-    var a = document.createElement("a");
-    document.body.appendChild(a);
-    a.style = "display: none";
-    var blob = new Blob([string_to_buffer(sceneSave)], {type: "image/png"}),
-    url = window.URL.createObjectURL(blob);
-
-    a.href = url;
-    a.download = "edited.png";
-    a.click();
-    window.URL.revokeObjectURL(url);
 }
 
-
-;
+function saveScene() {
+  sceneSave = sceneImage;
+  sceneSave += String.fromCharCode(charaNum, 0x00, 0x00, 0x00);
+  for(var j=0; j < charaData.length; j++){
+    sceneSave += charaData[j];
+  }
+  sceneSave += sceneData;
+  var blob = new Blob([Uint8Array.from(sceneSave.split(""), e => e.charCodeAt(0))], {type: "image/png"});
+  var a = document.createElement("a");
+  var url = window.URL.createObjectURL(blob);
+  a.href = url;
+  a.download = "edited.png"; 
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
 </script>  
 </head>
 <body>
-<button id="save" onclick="save()" disabled="disabled">保存</button>
-<button id="add" onclick="addChara()" disabled="disabled">1人追加(先頭キャラを複製)</button>
-<button id="rem" onclick="remChara()" disabled="disabled">1人削除(末尾キャラを削除)</button>
-<br>
-<input type="file" id="inputfile" onchange="sceneAddFile(event);" >
-<br>
-<div id="scene" style="border: gray solid 1px;height:180px;width:320px;" ondrop="sceneDrop(event);" ondragover="sceneDragOver(event);">
-シーンデータをドロップ
-</div>
-<br>
-<div id="imgArea">
+  <button id="save" onclick="saveScene()" disabled="disabled">保存</button>
+  <button id="add" onclick="addChara()" disabled="disabled">1人追加(先頭キャラを複製)</button>
+  <button id="rem" onclick="remChara()" disabled="disabled">1人削除(末尾キャラを削除)</button>
+  <br>
+  <input type="file" id="inputfile" onchange="loadScene(event);"></input>
+  <br>
+  <div id="scene" ondrop="event.preventDefault();loadScene(event);" ondragover="event.preventDefault();">シーンデータをドロップ</div>
+  <br>
+  <div id="members"></div>
 </body>
-</html> 
+</html>
